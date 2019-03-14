@@ -24,6 +24,33 @@ import eu.adcharge.sdk.logic.AdCharge;
 public class MainActivity extends AppCompatActivity {
     AdCharge adCharge = null;
     String androidId = "";
+    // # Settings to configure SDK
+    private static AdCharge.Settings ADCHARGE_SETTINGS = new AdCharge.Settings()
+            // # Ask user for location, use location for targeting
+            .useLocation(false)
+            //       or .useLocation(true)
+            //
+            // # Configuration of small banner
+            .smallBanner(
+                    new AdCharge.Settings.SmallBanner()
+                            // # show or do not show small banner
+                            .enable(true)
+                            //       or .enable(false)
+                            //
+                            // # initial placement on screen
+                            .initialPosition(AdCharge.Settings.SmallBanner.InitialPosition.MIDDLE)
+                            //       or .initialPosition(AdCharge.Settings.SmallBanner.InitialPosition.TOP)
+                            //       or .initialPosition(AdCharge.Settings.SmallBanner.InitialPosition.BOTTOM)
+                            //
+                            // # chose draggable area
+                            .dragSensitiveArea(AdCharge.Settings.SmallBanner.DragSensitiveArea.HOLE_BANNER)
+                            //       or .dragSensitiveArea(AdCharge.Settings.SmallBanner.DragSensitiveArea.DRAG_ICON)
+                            //       or .dragSensitiveArea(AdCharge.Settings.SmallBanner.DragSensitiveArea.NONE)
+                            //
+                            // # display or hide 'drag icon'
+                            .dragIconDisplayed(false)
+                            //       or .dragIconDisplayed(true)
+            );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
 
         final Switch useAdcharge = findViewById(R.id.switch1);
         try {
-            adCharge = new AdCharge(BuildConfig.SERVER_URL, getApplicationContext(), BuildConfig.SHOW_SMALL_BANNER);
+            adCharge = new AdCharge(BuildConfig.SERVER_URL, getApplicationContext(), ADCHARGE_SETTINGS);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
