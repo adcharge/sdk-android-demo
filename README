@@ -4,6 +4,14 @@ https://developer.android.com/studio/projects/android-library.html#AddDependency
 
 add folowing to your build.gradle
 
+android {
+//.....your's project configurations
+    compileOptions {
+        sourceCompatibility 1.8
+        targetCompatibility 1.8
+    }
+}
+
 dependencies {
 //.....your's project dependencies
 
