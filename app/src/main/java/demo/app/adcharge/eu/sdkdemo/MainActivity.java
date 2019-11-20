@@ -50,7 +50,13 @@ public class MainActivity extends AppCompatActivity {
                             // # display or hide 'drag icon'
                             .dragIconDisplayed(false)
                             //       or .dragIconDisplayed(true)
+            )
+            .largeBanner(
+                    new AdCharge.Settings.LargeBanner()
+                            .bonusPointsBalanceDisplayed(false)
+                            //       or .bonusPointsBalanceDisplayed(true)
             );
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
