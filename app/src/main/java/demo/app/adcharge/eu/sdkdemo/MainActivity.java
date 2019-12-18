@@ -104,15 +104,6 @@ public class MainActivity extends AppCompatActivity {
                                 User toBeRegistered = new User();
                                 toBeRegistered.setUsername(username);
                                 toBeRegistered.setPassword(password);
-                                toBeRegistered.setGender(new Random().nextBoolean() ? Gender.MALE : Gender.FEMALE);
-                                Date date = null;
-                                try {
-                                    date = new SimpleDateFormat("yyyy-mm-dd").parse((new Random().nextBoolean() ? "1992" : "1896") + "-01-01");
-                                } catch (Exception ex) {
-                                    Log.e("date", "parse error", ex);
-                                }
-                                toBeRegistered.setBirthday(date);
-                                Log.d("toBeRegistered", toBeRegistered.toString());
                                 try {
                                     adCharge.registerSubscriberUser(toBeRegistered, BuildConfig.INDIVIDUAL_KEY);
                                     // some confirmation code for user which sent with third party channel
