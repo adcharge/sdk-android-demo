@@ -25,10 +25,23 @@
         android:layout_height="wrap_content" />
 
     <Switch
-        android:id="@+id/switch1"
+        android:id="@+id/activate"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Use Adcharge" />
+        android:text="Activate (Login)" />
+
+    <Switch
+        android:id="@+id/show_ads_on_call"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Show ads on call" />
+
+    <Button
+        android:id="@+id/show_in_app_ad"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:enabled="false"
+        android:text="Show in app ad (simulation of some action in app)" />
     </LinearLayout>
 
 

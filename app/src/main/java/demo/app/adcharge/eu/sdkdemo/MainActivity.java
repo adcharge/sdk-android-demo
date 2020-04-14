@@ -1,62 +1,28 @@
 package demo.app.adcharge.eu.sdkdemo;
 
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.provider.Settings.Secure;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.Switch;
 
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Random;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import eu.adcharge.api.ApiException;
 import eu.adcharge.api.ApiValidationException;
-import eu.adcharge.api.entities.Gender;
-import eu.adcharge.api.entities.User;
+import eu.adcharge.api.NoAdvertisementFoundException;
 import eu.adcharge.sdk.logic.AdCharge;
 
 public class MainActivity extends AppCompatActivity {
-    AdCharge adCharge = null;
     String androidId = "";
-    // # Settings to configure SDK
-    private static AdCharge.Settings ADCHARGE_SETTINGS = new AdCharge.Settings()
-            // # Ask user for location, use location for targeting
-            .useLocation(false)
-            //       or .useLocation(true)
-            //
-            // # Configuration of small banner
-            .smallBanner(
-                    new AdCharge.Settings.SmallBanner()
-                            // # show or do not show small banner
-                            .enable(true)
-                            //       or .enable(false)
-                            //
-                            // # initial placement on screen
-                            .initialPosition(AdCharge.Settings.SmallBanner.InitialPosition.MIDDLE)
-                            //       or .initialPosition(AdCharge.Settings.SmallBanner.InitialPosition.TOP)
-                            //       or .initialPosition(AdCharge.Settings.SmallBanner.InitialPosition.BOTTOM)
-                            //
-                            // # chose draggable area
-                            .dragSensitiveArea(AdCharge.Settings.SmallBanner.DragSensitiveArea.HOLE_BANNER)
-                            //       or .dragSensitiveArea(AdCharge.Settings.SmallBanner.DragSensitiveArea.DRAG_ICON)
-                            //       or .dragSensitiveArea(AdCharge.Settings.SmallBanner.DragSensitiveArea.NONE)
-                            //
-                            // # display or hide 'drag icon'
-                            .dragIconDisplayed(false)
-                            //       or .dragIconDisplayed(true)
-            )
-            .largeBanner(
-                    new AdCharge.Settings.LargeBanner()
-                            .bonusPointsBalanceDisplayed(false)
-                            //       or .bonusPointsBalanceDisplayed(true)
-            );
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,16 +30,14 @@ public class MainActivity extends AppCompatActivity {
         androidId = Secure.getString(getContentResolver(), Secure.ANDROID_ID);
         Log.d("androidId", androidId);
         setContentView(R.layout.activity_main);
-
-        final Switch useAdcharge = findViewById(R.id.switch1);
-        try {
-            adCharge = new AdCharge(BuildConfig.SERVER_URL, getApplicationContext(), ADCHARGE_SETTINGS);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        }
-        useAdcharge.setChecked(adCharge.isLoggedIn());
-
+        final Switch activate = findViewById(R.id.activate);
+        final Switch showAdsOnCall = findViewById(R.id.show_ads_on_call);
+        final Button showInAppAd = findViewById(R.id.show_in_app_ad);
         final EditText login = findViewById(R.id.editText);
+        AdChargeDependentCode.initAdCharge(this);
+        showAdsOnCall.setChecked(true); //.showAdsOnCall(true) in initial settings
+        final AdCharge adCharge = ((Application) getApplication()).getAdCharge();
+        activate.setChecked(adCharge.isLoggedIn());
         if (adCharge.isLoggedIn()) {
             new AsyncTask<Object, Object, Object>() {
                 @Override
@@ -86,53 +50,68 @@ public class MainActivity extends AppCompatActivity {
                     return null;
                 }
             }.execute();
-
         } else {
             login.setText(androidId);
         }
-        useAdcharge.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        activate.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     final String username = login.getText().toString();
-                    final String password = androidId;
-                    new AsyncTask<Object, Object, Object>() {
-                        @Override
-                        protected Object doInBackground(Object[] objects) {
-                            try {
-                                adCharge.login(username, password, BuildConfig.INDIVIDUAL_KEY, MainActivity.this);
-                            } catch (ApiException | IOException | ApiValidationException e) {
-                                User toBeRegistered = new User();
-                                toBeRegistered.setUsername(username);
-                                toBeRegistered.setPassword(password);
-                                try {
-                                    adCharge.registerSubscriberUser(toBeRegistered, BuildConfig.INDIVIDUAL_KEY);
-                                    // some confirmation code for user which sent with third party channel
-                                    String code = "0000";
-                                    adCharge.confirmUser(code);
-                                    adCharge.login(username, password, BuildConfig.INDIVIDUAL_KEY, MainActivity.this);
-                                } catch (ApiValidationException e1) {
-                                    e1.printStackTrace();
-                                } catch (ApiException e1) {
-                                    e1.printStackTrace();
-                                } catch (IOException e1) {
-                                    e1.printStackTrace();
-                                }
-                            }
-                            return null;
-                        }
-                    }.execute();
-
+                    List<String> credentials = AdChargeDependentCode.getAdChargeCredentialsForUniqueUser(username);
+                    new AdChargeDependentCode.LoginUserTask(credentials.get(0), credentials.get(1), MainActivity.this, adCharge).execute();
+                    showInAppAd.setEnabled(true);
                 } else {
-                    new AsyncTask<Object, Object, Object>() {
-                        @Override
-                        protected Object doInBackground(Object[] objects) {
-                            adCharge.logout();
-                            return null;
-                        }
-                    }.execute();
-
+                    AdChargeDependentCode.deactivateAdCharge(adCharge);
+                    showInAppAd.setEnabled(false);
                 }
+
             }
         });
+        showAdsOnCall.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                adCharge.updateSettings(AdChargeDependentCode.ADCHARGE_SETTINGS.showAdsOnCall(isChecked));
+            }
+        });
+        showInAppAd.setEnabled(adCharge.isLoggedIn());
+        showInAppAd.setOnClickListener(
+                new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        new AdChargeDependentCode.AsyncTaskWithTimeout<Void, Void, Void>(MainActivity.this, 5, TimeUnit.SECONDS) {
+                            boolean adPreloaded = false;
+                            // this task might be divided in 2 different parts
+                            // preload ad (if it possible to predict moment when ad supposed to be shown - preload it few seconds before usage, but no more then 30 seconds)
+                            // use it
+                            //
+                            // preload is not required but improves performance and gives warranty there's an advertisement for user
+                            // means app will not show empty activity if no ads found
+                            @Override
+                            protected Void runInBackground(Void... voids) {
+                                try {
+                                    adCharge.preloadInAppAdvertisement();
+                                    adPreloaded = true;
+                                } catch (NoAdvertisementFoundException e) {
+                                    // just no advertisement for this user available
+                                    // (normal flow, happens for different reasons)
+                                } catch (ApiException | ApiValidationException | IOException e) {
+                                    e.printStackTrace();
+                                    // might be a bug or temporal network issue
+                                    // make sense to log and collect data, such cases, if shared might help us
+                                }
+                                return null;
+                            }
+
+                            @Override
+                            protected void onPostExecute(Void aVoid) {
+                                if (adPreloaded) {
+                                    Intent adActivity = new Intent(getApplicationContext(), AdActivity.class);
+                                    adActivity.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+                                    startActivity(adActivity);
+                                }
+                            }
+                        }.execute();
+                    }
+                }
+        );
     }
 }
